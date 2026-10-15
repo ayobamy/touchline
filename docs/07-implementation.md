@@ -85,7 +85,7 @@ Done: on seed 7 late-press it emits every goal and card and Ironbridge's press s
 
 ### 4. MCP server (built)
 
-`internal/mcp` implements the protocol (initialize, ping, tools/list, tools/call over stdio and streamable HTTP with JSON responses) using only the standard library; see [09 Decisions](09-decisions.md#d11-our-own-small-mcp-server). `internal/store` holds the live match; `internal/mcptools` registers the nine tools in [06](06-agents.md#mcp-tools); `cmd/server` wires them together and replays a match from a file, stdin or the simulator.
+`internal/mcp` implements the protocol (initialize, ping, tools/list, tools/call over stdio and streamable HTTP with JSON responses) using only the standard library; see [ADR 0014](adr/0014-own-mcp-server-implementation.md). `internal/store` holds the live match; `internal/mcptools` registers the nine tools in [06](06-agents.md#mcp-tools); `cmd/server` wires them together and replays a match from a file, stdin or the simulator.
 
 ```bash
 go run ./cmd/server -simulate -seed 7 -scenario scenarios/late-press.json -speed 60   # HTTP on :8080

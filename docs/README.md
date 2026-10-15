@@ -12,7 +12,7 @@ These documents describe what Touchline is, how it is built and how it will be f
 | [06 Agents](06-agents.md) | Agent roles, MCP tools, shared state, handoffs, failure recovery, personalization and evaluation |
 | [07 Implementation guide](07-implementation.md) | Repository layout, local development, coding standards, testing, and step-by-step build notes per component |
 | [08 Demo and submission](08-demo-and-submission.md) | The two-minute video script and the submission checklist |
-| [09 Decisions](09-decisions.md) | Key design decisions and why they were made |
+| [09 Decisions](09-decisions.md) and [ADRs](adr/README.md) | Architecture Decision Records: every significant choice, its context, consequences and alternatives |
 
 ## Status at a glance
 

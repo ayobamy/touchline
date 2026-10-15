@@ -83,6 +83,7 @@ Start with [docs/README.md](docs/README.md). Highlights:
 - [Stats engine](docs/05-stats-engine.md): every metric and its formula
 - [Agents](docs/06-agents.md): roles, shared state, handoffs and failure recovery
 - [Implementation guide](docs/07-implementation.md): how to build, test and deploy each part
+- [Architecture decisions](docs/adr/README.md): why things are the way they are
 
 ## Built with
 
