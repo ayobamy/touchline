@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ayobamy/touchline/schema/match.schema.json",
+  "title": "Match",
+  "description": "Fixture metadata sent as the first message of every stream. All clubs and players are fictional.",
+  "type": "object",
+  "required": ["id", "home", "away", "venue", "seed", "scenario"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string" },
+    "home": { "$ref": "#/$defs/team" },
+    "away": { "$ref": "#/$defs/team" },
+    "venue": { "type": "string" },
+    "seed": { "type": "integer", "minimum": 0 },
+    "scenario": { "type": "string" }
+  },
+  "$defs": {
+    "team": {
+      "type": "object",
+      "required": ["id", "name", "short_name", "players"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "short_name": { "type": "string" },
+        "players": { "type": "array", "items": { "$ref": "#/$defs/player" } }
+      }
+    },
+    "player": {
+      "type": "object",
+      "required": ["id", "name", "number", "position"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "number": { "type": "integer", "minimum": 1 },
+        "position": { "enum": ["GK", "RB", "CB", "LB", "CM", "RW", "ST", "LW"] }
+      }
+    }
+  }
+}

@@ -1,0 +1,85 @@
+# Touchline
+
+**AI agents that explain the game as it happens, in your language, for your club.**
+
+Touchline is a live match producer made of AI agents. It turns a stream of synthetic football events into explained, verified, timed overlays that sit on screen beside the match, and personalizes them for each viewer: an analyst gets full metrics in English, while a casual fan gets plain-language explanations in Nigerian Pidgin, following one player if they like.
+
+Built for the Microsoft *Inside the Game: Developer Hackathon* (October 2026). All data is synthetic, and all clubs and players are fictional.
+
+## How it works
+
+One pipeline, five stages:
+
+| Stage | What happens | Status |
+| --- | --- | --- |
+| 1. Ingest | A steerable match simulator streams passes, shots, tackles, pressure and possession changes | Built |
+| 2. Interpret | A deterministic stats engine computes pass difficulty, xG, speeds, possession, momentum, pressure index, chaos and rhythm | Built |
+| 3. Explain | Agents on Microsoft Foundry decide what matters, explain why, and verify every claim against event IDs | Planned |
+| 4. Render | Timed overlay JSON is pushed to a live pitch view | Contract built, UI planned |
+| 5. Personalize | Role, club, player, language and favourite metric shape what each viewer sees | Planned |
+
+The core rule: **the code computes every number; the AI only explains them.** Every overlay must cite the events behind it, or it is rejected.
+
+## Quick start
+
+Requires Go 1.24 or later. No other dependencies.
+
+```bash
+# Generate a match as newline-delimited JSON
+go run ./cmd/simulator -seed 7 > match.ndjson
+
+# Replay a scenario at one match minute per second and watch the stats move
+go run ./cmd/simulator -seed 7 -scenario scenarios/late-press.json -speed 60 \
+  | go run ./cmd/stats -every 5 -pretty
+
+# Run the tests
+go test ./...
+```
+
+The same seed and scenario always produce the same match, so a demo can be replayed exactly.
+
+## Scenarios
+
+| File | Story |
+| --- | --- |
+| `scenarios/baseline.json` | An even match |
+| `scenarios/late-press.json` | Ironbridge Rovers press high from the hour mark |
+| `scenarios/red-card.json` | Riverside Athletic go down to ten men on 58 minutes |
+
+Scenarios shift probabilities; they never fix the result.
+
+## Repository layout
+
+```
+cmd/simulator      synthetic match generator (NDJSON to stdout or a file)
+cmd/stats          reads a stream, prints statistics snapshots
+internal/events    event, match and stream contract
+internal/sim       the simulator and scenarios
+internal/stats     deterministic metrics and the running stats engine
+internal/overlay   the on-screen overlay contract and its validation
+schema/            JSON Schemas for events, matches and overlays
+scenarios/         scenario files
+docs/              plan, architecture, contracts, implementation guide
+agents/            Foundry agents (planned)
+web/               pitch view and overlays (planned)
+```
+
+## Documentation
+
+Start with [docs/README.md](docs/README.md). Highlights:
+
+- [Overview](docs/01-overview.md): the problem, the users and how Touchline meets the brief
+- [Plan](docs/02-plan.md): the 13-day build plan, milestones and risks
+- [Architecture](docs/03-architecture.md): components, data flow and Azure services
+- [Data contracts](docs/04-data-contracts.md): events, matches and overlays
+- [Stats engine](docs/05-stats-engine.md): every metric and its formula
+- [Agents](docs/06-agents.md): roles, shared state, handoffs and failure recovery
+- [Implementation guide](docs/07-implementation.md): how to build, test and deploy each part
+
+## Built with
+
+Go, Microsoft Foundry, Microsoft Agent Framework, Model Context Protocol, Azure Event Hubs, Azure Container Apps, Azure SignalR Service and Azure Managed Redis. Some of these are planned; the status table above shows what exists today.
+
+## Licence
+
+MIT. See [LICENSE](LICENSE).

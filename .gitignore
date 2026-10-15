@@ -1,0 +1,19 @@
+# Build output
+bin/
+*.ndjson
+
+# Local secrets
+.env
+
+# Python
+__pycache__/
+.venv/
+
+# Node
+node_modules/
+dist/
+
+# Editors and OS
+.idea/
+.vscode/
+.DS_Store

@@ -1,0 +1,10 @@
+{
+  "name": "red-card",
+  "description": "Riverside Athletic go down to ten men on 58 minutes and Ironbridge Rovers take control.",
+  "cards": [
+    { "team": "home", "minute": 58, "card": "red", "number": 5 }
+  ],
+  "modifiers": [
+    { "team": "away", "from_minute": 58, "to_minute": 120, "attack": 1.2 }
+  ]
+}

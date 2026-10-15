@@ -1,0 +1,7 @@
+{
+  "name": "late-press",
+  "description": "Ironbridge Rovers switch to a high press from the hour mark and push for a late goal.",
+  "modifiers": [
+    { "team": "away", "from_minute": 60, "to_minute": 120, "press": 1.8, "attack": 1.3 }
+  ]
+}

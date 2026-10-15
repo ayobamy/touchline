@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ayobamy/touchline/schema/event.schema.json",
+  "title": "Match event",
+  "description": "One synthetic match event. Coordinates are metres on a 105 x 68 pitch; the home team attacks towards x = 105. Events are ordered by (period, clock_ms).",
+  "type": "object",
+  "required": ["id", "match_id", "seq", "type", "period", "clock_ms"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "description": "Unique event ID: <match_id>-<seq, 5 digits>." },
+    "match_id": { "type": "string" },
+    "seq": { "type": "integer", "minimum": 1, "description": "Strictly increasing within a match." },
+    "type": {
+      "enum": ["kickoff", "pass", "shot", "tackle", "interception", "pressure", "possession_change", "foul", "card", "goal", "half_time", "full_time"]
+    },
+    "period": { "enum": [1, 2] },
+    "clock_ms": { "type": "integer", "minimum": 0, "description": "Match clock; the second half starts at 2700000 (45:00)." },
+    "team_id": { "type": "string", "description": "Acting team; for possession_change and kickoff, the team that now has the ball." },
+    "player_id": { "type": "string", "description": "Acting player." },
+    "recipient_id": { "type": "string", "description": "Pass target; required on a complete pass." },
+    "opponent_id": { "type": "string", "description": "Opposing player involved: the player pressed, tackled or fouled." },
+    "start": { "$ref": "#/$defs/point" },
+    "end": { "$ref": "#/$defs/point" },
+    "outcome": {
+      "enum": ["complete", "incomplete", "on_target", "off_target", "blocked", "goal", "won", "lost"],
+      "description": "Pass: complete | incomplete. Shot: on_target | off_target | blocked | goal. Tackle: won | lost."
+    },
+    "ball_speed_kmh": { "type": "number", "exclusiveMinimum": 0 },
+    "under_pressure": { "type": "boolean" },
+    "card": { "enum": ["yellow", "red"] },
+    "score": { "$ref": "#/$defs/score" },
+    "related_id": { "type": "string", "description": "On a goal, the ID of the shot that scored." }
+  },
+  "$defs": {
+    "point": {
+      "type": "object",
+      "required": ["x", "y"],
+      "additionalProperties": false,
+      "properties": {
+        "x": { "type": "number", "minimum": 0, "maximum": 105 },
+        "y": { "type": "number", "minimum": 0, "maximum": 68 }
+      }
+    },
+    "score": {
+      "type": "object",
+      "required": ["home", "away"],
+      "additionalProperties": false,
+      "properties": {
+        "home": { "type": "integer", "minimum": 0 },
+        "away": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}
