@@ -98,7 +98,7 @@ Each event in the window credits the team that made it:
 
 ### Pressure index
 
-`pressures by a team ÷ passes by the opponent × 10`, so "pressures per 10 opponent passes". Rises sharply when a team starts pressing high; with seed 7 and `scenarios/late-press.json`, the away team's index climbs from about 4.7 in the first half to 9.4 by the 90th minute.
+`pressures by a team ÷ passes by the opponent × 10`, so "pressures per 10 opponent passes". Rises sharply when a team starts pressing high; with seed 7 and `scenarios/late-press.json`, the away team's index sits around 4–5 in the first half and climbs above 9 in the last ten minutes.
 
 ### Chaos
 

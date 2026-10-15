@@ -1,4 +1,4 @@
-.PHONY: test vet build run demo
+.PHONY: test vet build run demo serve
 
 test: vet
 	go test ./...
@@ -19,3 +19,7 @@ run:
 demo:
 	go run ./cmd/simulator -seed 7 -scenario scenarios/late-press.json -speed 60 \
 		| go run ./cmd/stats -every 5 -pretty
+
+# Serve the late-press match to agents over MCP at http://localhost:8080/mcp.
+serve:
+	go run ./cmd/server -simulate -seed 7 -scenario scenarios/late-press.json -speed 60

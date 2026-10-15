@@ -13,7 +13,7 @@ One pipeline, five stages:
 | Stage | What happens | Status |
 | --- | --- | --- |
 | 1. Ingest | A steerable match simulator streams passes, shots, tackles, pressure and possession changes | Built |
-| 2. Interpret | A deterministic stats engine computes pass difficulty, xG, speeds, possession, momentum, pressure index, chaos and rhythm | Built |
+| 2. Interpret | A deterministic stats engine computes pass difficulty, xG, speeds, possession, momentum, pressure index, chaos and rhythm; rules flag candidate moments; an MCP server exposes it all to agents | Built |
 | 3. Explain | Agents on Microsoft Foundry decide what matters, explain why, and verify every claim against event IDs | Planned |
 | 4. Render | Timed overlay JSON is pushed to a live pitch view | Contract built, UI planned |
 | 5. Personalize | Role, club, player, language and favourite metric shape what each viewer sees | Planned |
@@ -31,6 +31,9 @@ go run ./cmd/simulator -seed 7 > match.ndjson
 # Replay a scenario at one match minute per second and watch the stats move
 go run ./cmd/simulator -seed 7 -scenario scenarios/late-press.json -speed 60 \
   | go run ./cmd/stats -every 5 -pretty
+
+# Serve a live match to agents over MCP (http://localhost:8080/mcp)
+go run ./cmd/server -simulate -seed 7 -scenario scenarios/late-press.json -speed 60
 
 # Run the tests
 go test ./...
@@ -53,9 +56,14 @@ Scenarios shift probabilities; they never fix the result.
 ```
 cmd/simulator      synthetic match generator (NDJSON to stdout or a file)
 cmd/stats          reads a stream, prints statistics snapshots
+cmd/server         replays a match and serves it as MCP tools and a JSON API
 internal/events    event, match and stream contract
 internal/sim       the simulator and scenarios
 internal/stats     deterministic metrics and the running stats engine
+internal/moments   rules that flag candidate moments for the agents
+internal/store     live match state, safe for concurrent readers
+internal/mcp       a small, dependency-free MCP server (stdio and HTTP)
+internal/mcptools  the Touchline tools agents call
 internal/overlay   the on-screen overlay contract and its validation
 schema/            JSON Schemas for events, matches and overlays
 scenarios/         scenario files

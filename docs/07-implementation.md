@@ -11,16 +11,18 @@ touchline/
 ├── cmd/
 │   ├── simulator/        built: match generator
 │   ├── stats/            built: stats from a stream
-│   └── server/           planned: stats service + MCP server (Event Hubs consumer, Redis writer)
+│   └── server/           built: replays a match, serves MCP tools and a JSON API
 ├── internal/
 │   ├── events/           built: event, match and stream contract
 │   ├── sim/              built: simulator and scenarios
 │   ├── stats/            built: metrics and stats engine
 │   ├── overlay/          built: overlay contract
 │   ├── schemacheck/      built: Go type vs JSON Schema drift check
-│   ├── moments/          planned: candidate-moment rules
-│   ├── mcpserver/        planned: MCP tools over the stats engine
-│   └── transport/        planned: Event Hubs and stdin sources, Redis and memory stores
+│   ├── moments/          built: candidate-moment rules
+│   ├── store/            built: live match state for concurrent readers
+│   ├── mcp/              built: dependency-free MCP server (stdio, streamable HTTP)
+│   ├── mcptools/         built: the Touchline tools
+│   └── transport/        planned: Event Hubs source, Redis-backed moment queue
 ├── agents/               planned: Python orchestrator and agent instructions
 ├── web/                  planned: pitch view
 ├── schema/               JSON Schemas
@@ -37,6 +39,7 @@ Requirements: Go 1.24+. Later: Python 3.12+ for `agents/`, Node 20+ for `web/`, 
 make test        # go vet + go test
 make run         # one match, seed 7, as fast as possible, to match.ndjson
 make demo        # late-press scenario at 60x with stats every 5 minutes
+make serve       # late-press match served over MCP at http://localhost:8080/mcp
 ```
 
 ## Coding standards
@@ -54,8 +57,9 @@ make demo        # late-press scenario at 60x with stats every 5 minutes
 | Contracts | Validation accepts good and rejects bad events and overlays; Go types match schemas | `internal/events`, `internal/overlay` |
 | Simulator | Determinism; 20 seeds produce valid, ordered streams with realistic volumes; scenarios do what they say | `internal/sim` |
 | Stats | xG calibration; pass difficulty ordering; possession and accuracy on hand-built streams; window pruning | `internal/stats` |
-| Moments | Each rule fires on a hand-built stream and stays quiet otherwise | `internal/moments` |
-| MCP server | Each tool returns the engine's numbers for a replayed match | `internal/mcpserver` |
+| Moments | Every goal and card becomes a moment; the late press is detected; evidence IDs exist and are never from the future; cooldowns hold | `internal/moments` |
+| MCP protocol | Version negotiation, tools list and call, tool errors vs protocol errors, stdio and HTTP transports | `internal/mcp` |
+| MCP tools | Each tool returns the engine's numbers for a replayed match; bad arguments become tool errors | `internal/mcptools` |
 | Agents | Verifier rejects a planted wrong number; Director drops a stale overlay; fallback on timeout. Model calls replaced by recorded fixtures | `agents/tests` |
 | End to end | Replay seed 7 late-press locally; at least one overlay per goal; zero invalid overlays | `make e2e` (planned) |
 
@@ -73,23 +77,28 @@ Done when: `go test ./internal/sim` passes; `make demo` shows the late press in 
 
 Done when: `go test ./internal/stats` passes.
 
-### 3. Candidate moments (next)
+### 3. Candidate moments (built)
 
-`internal/moments`: a `Detector` that wraps the engine and returns `[]Moment` from each `Apply`, using the triggers in [06](06-agents.md#where-moments-come-from). Keep thresholds in one struct so they can be tuned from a config file.
+`internal/moments`: a `Detector` wraps the engine and returns `[]Moment` from each `Apply`, using the rules in [06](06-agents.md#where-moments-come-from). Thresholds are one struct, `moments.Thresholds`.
 
-Done when: on seed 7 late-press, it emits every goal and card, at least one press switch after minute 60, and no more than about 40 candidates in the match.
+Done: on seed 7 late-press it emits every goal and card and Ironbridge's press switch on 63 minutes, with 42 candidates in the match.
 
-### 4. MCP server (next)
+### 4. MCP server (built)
 
-`internal/mcpserver` and `cmd/server`. Use the official Go SDK for the Model Context Protocol. Register the tools in [06](06-agents.md#mcp-tools), each a thin read-only wrapper over the engine. Support the streamable HTTP transport for cloud and stdio for local testing.
+`internal/mcp` implements the protocol (initialize, ping, tools/list, tools/call over stdio and streamable HTTP with JSON responses) using only the standard library; see [09 Decisions](09-decisions.md#d11-our-own-small-mcp-server). `internal/store` holds the live match; `internal/mcptools` registers the nine tools in [06](06-agents.md#mcp-tools); `cmd/server` wires them together and replays a match from a file, stdin or the simulator.
 
-Done when: an MCP client such as the MCP Inspector lists the tools and `get_snapshot` returns the same numbers as `cmd/stats` at the same clock.
+```bash
+go run ./cmd/server -simulate -seed 7 -scenario scenarios/late-press.json -speed 60   # HTTP on :8080
+go run ./cmd/server -simulate -stdio                                                   # stdio
+```
+
+Done: tests call every tool through the full JSON-RPC path, and `get_snapshot` matches the stats engine exactly. Still to check by hand: connect the MCP Inspector and a Foundry agent to `/mcp`.
 
 ### 5. Transport and shared state
 
-`internal/transport`: a `Source` interface (stdin, Event Hubs) and a `Store` interface (memory, Redis). The server reads from a source, applies events, writes snapshots and moments to the store.
+`cmd/server` already reads from a file, stdin or the simulator and keeps state in memory. Remaining: an Event Hubs source, and publishing moments and the agent trace to Redis so the orchestrator and viewer can run as separate apps.
 
-Done when: the server runs locally with `stdin` + `memory`, and in Azure with Event Hubs + Redis, from the same binary and a flag.
+Done when: the server runs locally from a file and in Azure from Event Hubs, from the same binary and a flag.
 
 ### 6. Agents
 

@@ -21,7 +21,8 @@ These documents describe what Touchline is, how it is built and how it will be f
 | Event, match and overlay contracts with JSON Schemas | Built and tested |
 | Match simulator with scenarios | Built and tested |
 | Stats engine | Built and tested |
-| MCP server exposing stats tools | Next |
+| Candidate-moment rules | Built and tested |
+| MCP server exposing stats tools (HTTP and stdio) | Built and tested |
 | Agents on Microsoft Foundry | Planned |
 | Event Hubs ingestion and Redis shared state | Planned |
 | Pitch view and overlays | Planned |

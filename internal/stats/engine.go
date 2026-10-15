@@ -63,7 +63,7 @@ type PlayerStats struct {
 	difficultySum float64
 }
 
-// Window summarises the last few minutes of play.
+// Window summarises a recent stretch of play.
 type Window struct {
 	Minutes int `json:"minutes"`
 	// Momentum runs from -1 (away team on top) to +1 (home team on top).
@@ -88,14 +88,6 @@ type Snapshot struct {
 	Window  Window        `json:"window"`
 }
 
-type windowEntry struct {
-	clock   int64
-	typ     events.Type
-	team    string
-	outcome events.Outcome
-	weight  float64 // momentum credit for team
-}
-
 // Engine consumes events in order and keeps running statistics.
 type Engine struct {
 	match         events.Match
@@ -112,7 +104,7 @@ type Engine struct {
 	possessionTeam string
 	lastClock      int64
 
-	window []windowEntry
+	window []events.Event // events of the current period within the window
 }
 
 // New returns an engine for the given match.
@@ -133,6 +125,9 @@ func New(m events.Match) *Engine {
 	return e
 }
 
+// Match returns the fixture the engine was created for.
+func (e *Engine) Match() events.Match { return e.match }
+
 // Apply folds one event into the statistics and returns the numbers derived
 // for that event. Events must arrive in (period, clock) order.
 func (e *Engine) Apply(ev events.Event) Derived {
@@ -144,25 +139,16 @@ func (e *Engine) Apply(ev events.Event) Derived {
 	e.accruePossession(ev.ClockMs)
 	e.clock = ev.ClockMs
 
-	home := e.match.IsHome(ev.TeamID)
+	d := Derive(ev, e.match.IsHome(ev.TeamID))
 	team := e.teams[ev.TeamID]
 	player := e.players[ev.PlayerID]
-	var d Derived
-	weight := 0.0
 
 	switch ev.Type {
-	case events.Kickoff:
-		e.possessionTeam = ev.TeamID
-	case events.PossessionChange:
+	case events.Kickoff, events.PossessionChange:
 		e.possessionTeam = ev.TeamID
 	case events.HalfTime, events.FullTime:
 		e.possessionTeam = ""
 	case events.Pass:
-		if ev.Start == nil || ev.End == nil {
-			break
-		}
-		d.PassDistanceM = round1(Distance(*ev.Start, *ev.End))
-		d.PassDifficulty = PassDifficulty(*ev.Start, *ev.End, home, ev.UnderPressure)
 		complete := ev.Outcome == events.Complete
 		if team != nil {
 			team.Passes++
@@ -179,19 +165,8 @@ func (e *Engine) Apply(ev events.Event) Derived {
 				player.PassesCompleted++
 			}
 		}
-		if a, _ := attackingFrame(*ev.End, home); complete && a > 70 {
-			weight = 1
-		}
 	case events.Shot:
-		if ev.Start != nil {
-			d.ExpectedGoals = round2(ExpectedGoals(*ev.Start, home))
-		}
-		d.ShotSpeedKmh = round1(ev.BallSpeedKmh)
 		onTarget := ev.Outcome == events.OnTarget || ev.Outcome == events.Scored
-		weight = 3
-		if onTarget {
-			weight++
-		}
 		if team != nil {
 			team.Shots++
 			team.ExpectedGoals += d.ExpectedGoals
@@ -208,7 +183,6 @@ func (e *Engine) Apply(ev events.Event) Derived {
 			player.ExpectedGoals += d.ExpectedGoals
 		}
 	case events.Goal:
-		weight = 2
 		if ev.Score != nil {
 			e.score = *ev.Score
 		}
@@ -225,15 +199,11 @@ func (e *Engine) Apply(ev events.Event) Derived {
 				team.TacklesWon++
 			}
 		}
-		if ev.Outcome == events.Won {
-			weight = 1.5
-			if player != nil {
-				player.Touches++
-				player.TacklesWon++
-			}
+		if ev.Outcome == events.Won && player != nil {
+			player.Touches++
+			player.TacklesWon++
 		}
 	case events.Interception:
-		weight = 1.5
 		if team != nil {
 			team.Interceptions++
 		}
@@ -242,7 +212,6 @@ func (e *Engine) Apply(ev events.Event) Derived {
 			player.Interceptions++
 		}
 	case events.Pressure:
-		weight = 0.5
 		if team != nil {
 			team.Pressures++
 		}
@@ -263,10 +232,27 @@ func (e *Engine) Apply(ev events.Event) Derived {
 		}
 	}
 
-	e.window = append(e.window, windowEntry{
-		clock: ev.ClockMs, typ: ev.Type, team: ev.TeamID, outcome: ev.Outcome, weight: weight,
-	})
+	e.window = append(e.window, ev)
 	e.pruneWindow()
+	return d
+}
+
+// Derive computes the per-event numbers for one event without changing any
+// state. home says whether the acting team is the home team.
+func Derive(ev events.Event, home bool) Derived {
+	var d Derived
+	switch ev.Type {
+	case events.Pass:
+		if ev.Start != nil && ev.End != nil {
+			d.PassDistanceM = round1(Distance(*ev.Start, *ev.End))
+			d.PassDifficulty = PassDifficulty(*ev.Start, *ev.End, home, ev.UnderPressure)
+		}
+	case events.Shot:
+		if ev.Start != nil {
+			d.ExpectedGoals = round2(ExpectedGoals(*ev.Start, home))
+		}
+		d.ShotSpeedKmh = round1(ev.BallSpeedKmh)
+	}
 	return d
 }
 
@@ -282,7 +268,7 @@ func (e *Engine) accruePossession(now int64) {
 func (e *Engine) pruneWindow() {
 	cutoff := e.clock - int64(e.windowMinutes)*60_000
 	i := 0
-	for i < len(e.window) && e.window[i].clock < cutoff {
+	for i < len(e.window) && e.window[i].ClockMs < cutoff {
 		i++
 	}
 	e.window = e.window[i:]
@@ -296,7 +282,7 @@ func (e *Engine) Snapshot() Snapshot {
 		Period:  e.period,
 		ClockMs: e.clock,
 		Score:   e.score,
-		Window:  e.windowSummary(),
+		Window:  e.Window(),
 	}
 	var totalPossession int64
 	for _, t := range e.teams {
@@ -321,6 +307,11 @@ func (e *Engine) Snapshot() Snapshot {
 	return s
 }
 
+// Window summarises the engine's rolling window.
+func (e *Engine) Window() Window {
+	return SummarizeWindow(e.match, e.window, e.periodStartMs, e.clock, e.windowMinutes)
+}
+
 // Player returns the statistics for one player.
 func (e *Engine) Player(id string) (PlayerStats, bool) {
 	p, ok := e.players[id]
@@ -339,21 +330,59 @@ func finishPlayer(p PlayerStats) PlayerStats {
 	return p
 }
 
-func (e *Engine) windowSummary() Window {
-	w := Window{Minutes: e.windowMinutes, PressureIndex: map[string]float64{}}
-	homeID, awayID := e.match.Home.ID, e.match.Away.ID
+// MomentumCredit is how much an event counts towards its team's momentum.
+// See docs/05-stats-engine.md for the table.
+func MomentumCredit(ev events.Event, home bool) float64 {
+	switch ev.Type {
+	case events.Pass:
+		if ev.Outcome == events.Complete && ev.End != nil {
+			if a, _ := attackingFrame(*ev.End, home); a > 70 {
+				return 1
+			}
+		}
+	case events.Shot:
+		if ev.Outcome == events.OnTarget || ev.Outcome == events.Scored {
+			return 4
+		}
+		return 3
+	case events.Goal:
+		return 2
+	case events.Tackle:
+		if ev.Outcome == events.Won {
+			return 1.5
+		}
+	case events.Interception:
+		return 1.5
+	case events.Pressure:
+		return 0.5
+	}
+	return 0
+}
 
-	var credit = map[string]float64{}
+// SummarizeWindow computes momentum, pressure index, chaos and rhythm over
+// the events of one period that fall in the last `minutes` before now.
+// periodStartMs is the clock time the period began, so early in a half the
+// per-minute rates divide by the time actually played.
+func SummarizeWindow(m events.Match, evs []events.Event, periodStartMs, now int64, minutes int) Window {
+	w := Window{Minutes: minutes, PressureIndex: map[string]float64{}}
+	homeID, awayID := m.Home.ID, m.Away.ID
+	cutoff := now - int64(minutes)*60_000
+
+	credit := map[string]float64{}
 	pressures := map[string]int{}
 	passes := map[string]int{}
-	changes := 0
-	for _, en := range e.window {
-		credit[en.team] += en.weight
-		switch en.typ {
+	changes, count := 0, 0
+	for _, ev := range evs {
+		if ev.ClockMs < cutoff || ev.ClockMs > now {
+			continue
+		}
+		count++
+		credit[ev.TeamID] += MomentumCredit(ev, m.IsHome(ev.TeamID))
+		switch ev.Type {
 		case events.Pressure:
-			pressures[en.team]++
+			pressures[ev.TeamID]++
 		case events.Pass:
-			passes[en.team]++
+			passes[ev.TeamID]++
 		case events.PossessionChange:
 			changes++
 		}
@@ -363,16 +392,15 @@ func (e *Engine) windowSummary() Window {
 		w.Momentum = round2((credit[homeID] - credit[awayID]) / total)
 	}
 	for _, id := range []string{homeID, awayID} {
-		opp := passes[e.match.Opponent(id)]
+		opp := passes[m.Opponent(id)]
 		w.PressureIndex[id] = round1(10 * float64(pressures[id]) / float64(max(opp, 1)))
 	}
 
-	elapsedMin := float64(e.clock-e.periodStartMs) / 60_000
-	minutes := min(float64(e.windowMinutes), elapsedMin)
-	if minutes < 1 {
-		minutes = 1
+	elapsed := min(float64(minutes), float64(now-periodStartMs)/60_000)
+	if elapsed < 1 {
+		elapsed = 1
 	}
-	w.ChaosPerMin = round1(float64(changes) / minutes)
-	w.RhythmPerMin = round1(float64(len(e.window)) / minutes)
+	w.ChaosPerMin = round1(float64(changes) / elapsed)
+	w.RhythmPerMin = round1(float64(count) / elapsed)
 	return w
 }
