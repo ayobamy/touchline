@@ -69,8 +69,8 @@ Every component reads and writes through small interfaces so the whole pipeline 
 | --- | --- | --- |
 | Event transport | stdin/stdout pipes (NDJSON) | Azure Event Hubs |
 | Shared state | In-memory store | Azure Managed Redis |
-| Overlay delivery | Server-sent events from the orchestrator | Azure SignalR Service |
-| Agents | Foundry (needs credentials) or a recorded fixture for tests | Foundry |
+| Overlay delivery | NDJSON from the orchestrator today; server-sent events with the viewer | Azure SignalR Service |
+| Agents | Recorded model replies (`make agents`), or Foundry with credentials | Foundry |
 
 Local mode keeps tests fast and lets judges run the data pipeline with nothing but Go installed.
 
@@ -87,7 +87,7 @@ The target is an overlay on screen within **8 seconds** of the event that trigge
 | Director and publish | 300 ms |
 | Slack for one Verifier rewrite | 1.5 s |
 
-The Director drops any overlay whose `show_at_ms` plus `ttl_ms` has already passed on the match clock. A late overlay is worse than none.
+The orchestrator enforces these as per-step deadlines (`Budget` in `agents/touchline_agents/config.py`), each capped by what is left of the moment's 7.8 s. The Director drops any overlay whose `show_at_ms` plus `ttl_ms` has already passed on the match clock. A late overlay is worse than none.
 
 ## Reliability
 
