@@ -15,33 +15,42 @@ In the full design a separate **Tactical Analyst** explains the "why" and a **Lo
 
 ## Where moments come from
 
-The stats service, not an agent, proposes candidate moments with simple rules, so the agents are not woken for every pass:
+Deterministic rules in `internal/moments`, not an agent, propose candidate moments, so the agents are not woken for every pass. Thresholds live in `moments.DefaultThresholds()`:
 
-| Candidate | Trigger |
+| Kind | Trigger |
 | --- | --- |
-| Goal | Any `goal` event |
-| Big chance | A shot with xG ≥ 0.25 |
-| Momentum swing | Momentum crosses ±0.4, or moves by 0.5 within the window |
-| Press switch | A team's pressure index rises by 3 or more within the window |
-| Card | Any `card` event |
-| Player milestone | A player's tenth completed pass, first shot on target, third tackle won |
-| Chaos spell | Chaos above 4 changes per minute for two minutes |
+| `goal` | Any `goal` event; evidence is the shot and the goal |
+| `big_chance` | A missed, saved or blocked shot with xG ≥ 0.25 |
+| `key_pass` | A completed pass with difficulty ≥ 8 |
+| `card` | Any `card` event |
+| `momentum_swing` | A team is now clearly on top (momentum beyond ±0.5) *and* either just crossed that level or momentum moved by 0.6 or more in five minutes |
+| `press_switch` | A team's pressure index rises by 3 or more in five minutes and reaches at least 6 |
+| `chaos_spell` | Possession changing hands 4 or more times a minute, sustained for two minutes |
+| `player_milestone` | A player's 40th completed pass, first saved shot on target, or fourth tackle won |
+
+Window rules stay quiet for the first four minutes of each half, and the same rule for the same team stays quiet for six minutes after firing. A typical match produces 35–55 candidates; on seed 7 with the late-press scenario Ironbridge's press switch fires on 63 minutes. Each moment carries up to six evidence event IDs and a plain-English summary using player and club names.
 
 The Moment Detector then decides which candidates deserve screen time. Expect it to skip most of them.
 
 ## MCP tools
 
-The MCP server exposes read-only tools over the stats engine. Agents must call these for any number they state.
+`cmd/server` replays a match into the store and exposes these read-only tools at `/mcp` (streamable HTTP) or over stdio with `-stdio`. Agents must call them for any number they state. On connect, the server's instructions remind the model of that rule and of the clock and pitch conventions.
 
 | Tool | Arguments | Returns |
 | --- | --- | --- |
-| `get_snapshot` | — | Score, clock, team stats, window metrics |
+| `get_match` | — | Teams, players (ID, name, number, position), venue, scenario |
+| `get_status` | — | Period, clock, score, event and moment counts, finished flag |
+| `get_snapshot` | `include_players` (optional) | Cumulative team stats and the last-5-minutes window; player stats on request |
 | `get_player_stats` | `player_id` | That player's cumulative stats |
-| `get_window` | `minutes` (1–10) | Momentum, pressure index, chaos and rhythm over that window |
-| `get_events` | `from_ms`, `to_ms`, optional `team_id`, `player_id`, `types[]` | Matching events with their derived metrics |
-| `get_event` | `event_id` | One event and its derived metrics |
-| `compare_periods` | `metric`, `from_a`, `to_a`, `from_b`, `to_b` | The metric for two time ranges, for "since the 60th minute…" claims |
-| `get_match` | — | Teams, players, venue |
+| `get_window` | `minutes` (1–45) | Momentum, pressure index, chaos and rhythm over the last N minutes of the current half |
+| `get_events` | optional `period`, `from_ms`, `to_ms`, `team_id`, `player_id`, `types[]`, `limit` (≤ 200) | Matching events with derived numbers, plus the total matched |
+| `get_event` | `event_id` | One event and its derived numbers |
+| `compare_periods` | `metric`, `a` and `b` as `{period, from_ms, to_ms}` | One metric for both teams over two spells; metrics: passes, passes_completed, pass_accuracy_pct, shots, shots_on_target, goals, xg, tackles_won, interceptions, pressures, pressure_index, momentum |
+| `list_moments` | `after` (optional) | Candidate moments after the first `after`, and `next` to pass on the following call |
+
+Bad arguments, unknown IDs and unknown fields come back as tool errors (`isError: true`) with a message the model can act on, not as protocol errors.
+
+The server also offers a small JSON API for the orchestrator and viewer: `GET /api/status`, `/api/match`, `/api/snapshot`, `/api/moments?after=N`, and `/healthz`.
 
 ## Shared state
 

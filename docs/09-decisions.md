@@ -61,3 +61,11 @@ Short records of the choices that shape Touchline. Add a new entry rather than e
 **Decision:** Of the category prizes, aim at Best Multi-Agent System.
 
 **Why:** Its criteria (distinct roles, shared state, handoffs, failure recovery, an outcome one agent could not achieve) match Touchline's design point for point.
+
+## D11 Our own small MCP server
+
+**Decision:** Implement the MCP server side ourselves (`internal/mcp`, about 300 lines, standard library only) instead of using the official Go SDK.
+
+**Why:** The build environment could not download Go modules, and Touchline needs only a small part of the protocol: initialize, ping, tools/list and tools/call over stdio and streamable HTTP with JSON responses. It keeps the Go code dependency-free. Tools are registered through one small interface, so switching to the official SDK later touches only `internal/mcp` and `internal/mcptools`.
+
+**Trade-off:** No server-initiated messages, resources, prompts or SSE streaming. None are needed for read-only tools.

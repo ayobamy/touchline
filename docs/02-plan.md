@@ -26,7 +26,7 @@ Other cuts:
 
 | Dates | Milestone | Done when |
 | --- | --- | --- |
-| Thu 15 – Sat 17 Oct | **M1 Data and stats** | Simulator, scenarios, stats engine and contracts are built and tested *(done 15 Oct)*. MCP server exposes the stats tools and an MCP client can call them. |
+| Thu 15 – Sat 17 Oct | **M1 Data and stats** | Simulator, scenarios, stats engine and contracts are built and tested; candidate-moment rules flag about 45 moments a match; the MCP server exposes nine read-only tools over HTTP and stdio *(all done 15 Oct)*. |
 | Sun 18 – Wed 21 Oct | **M2 Agents** | The four agents run on Foundry against a replayed match; every overlay that comes out passes `overlay.Validate`; a deliberate bad claim is rejected and rewritten; a forced timeout produces a fallback overlay. |
 | Thu 22 – Sat 24 Oct | **M3 Viewer** | The pitch view replays a match with live overlays; analyst and casual-fan views run side by side; a full-time recap is generated per profile. |
 | Sun 25 – Mon 26 Oct | **M4 Ship** | Deployed on Azure Container Apps with a public URL and a "replay match" button; README, architecture diagram and judge testing instructions are final. |
