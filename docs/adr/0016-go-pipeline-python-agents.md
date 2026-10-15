@@ -1,6 +1,6 @@
 # ADR 0016: Go for the data pipeline, Python for the agents
 
-- **Status:** Accepted; Go side implemented, Python side to follow
+- **Status:** Accepted, implemented: Go pipeline, and the Python orchestrator in `agents/` ([ADR 0022](0022-orchestrator-asyncio-pipeline.md))
 - **Date:** 2026-10-15
 
 ## Context

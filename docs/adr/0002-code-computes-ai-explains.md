@@ -1,6 +1,6 @@
 # ADR 0002: The code computes; the AI explains
 
-- **Status:** Accepted, implemented in the stats engine and MCP tools; agents to follow
+- **Status:** Accepted, implemented in the stats engine, the MCP tools and the agents
 - **Date:** 2026-10-15
 
 ## Context
@@ -25,4 +25,5 @@ Every number Touchline shows comes from deterministic Go code: the stats engine 
 
 ## In the code
 
-`internal/stats`, `internal/moments`, `internal/mcptools` (see `Instructions`).
+`internal/stats`, `internal/moments`, `internal/mcptools` (see `Instructions`); in the agents,
+`agents/touchline_agents/evidence.py` and `verifier.py` ([ADR 0023](0023-time-anchored-evidence-code-first-verifier.md)).

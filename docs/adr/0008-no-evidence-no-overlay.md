@@ -1,6 +1,6 @@
 # ADR 0008: No evidence, no overlay
 
-- **Status:** Accepted; contract implemented, enforcement in the publisher to follow
+- **Status:** Accepted, implemented: contract, and enforcement in the agents' publisher
 - **Date:** 2026-10-15
 
 ## Context
@@ -19,4 +19,5 @@ An overlay must cite at least one event ID in `evidence_event_ids`, or `overlay.
 
 ## In the code
 
-`internal/overlay/overlay.go`, `schema/overlay.schema.json`.
+`internal/overlay/overlay.go`, `schema/overlay.schema.json`, and the publisher gate in
+`agents/touchline_agents/publish.py` ([ADR 0024](0024-director-and-fallbacks-in-code.md)).

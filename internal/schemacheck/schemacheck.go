@@ -20,11 +20,17 @@ func Diff(path string, typ reflect.Type) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	return DiffSchema(raw, path, typ)
+}
+
+// DiffSchema is Diff for a schema already in memory, such as a component of
+// an OpenAPI document; name identifies the schema in the description.
+func DiffSchema(raw []byte, name string, typ reflect.Type) (string, error) {
 	var schema struct {
 		Properties map[string]json.RawMessage `json:"properties"`
 	}
 	if err := json.Unmarshal(raw, &schema); err != nil {
-		return "", fmt.Errorf("parse %s: %w", path, err)
+		return "", fmt.Errorf("parse %s: %w", name, err)
 	}
 
 	goFields := map[string]bool{}
@@ -33,22 +39,22 @@ func Diff(path string, typ reflect.Type) (string, error) {
 		if !f.IsExported() {
 			continue
 		}
-		name, _, _ := strings.Cut(f.Tag.Get("json"), ",")
-		if name == "" || name == "-" {
+		field := strings.Split(f.Tag.Get("json"), ",")[0]
+		if field == "" || field == "-" {
 			continue
 		}
-		goFields[name] = true
+		goFields[field] = true
 	}
 
 	var missing, extra []string
-	for name := range goFields {
-		if _, ok := schema.Properties[name]; !ok {
-			missing = append(missing, name)
+	for field := range goFields {
+		if schema.Properties[field] == nil {
+			missing = append(missing, field)
 		}
 	}
-	for name := range schema.Properties {
-		if !goFields[name] {
-			extra = append(extra, name)
+	for field := range schema.Properties {
+		if !goFields[field] {
+			extra = append(extra, field)
 		}
 	}
 	slices.Sort(missing)
@@ -56,10 +62,10 @@ func Diff(path string, typ reflect.Type) (string, error) {
 
 	var b strings.Builder
 	if len(missing) > 0 {
-		fmt.Fprintf(&b, "in %s but not in %s: %v. ", typ.Name(), path, missing)
+		fmt.Fprintf(&b, "in %s but not in %s: %v. ", typ.Name(), name, missing)
 	}
 	if len(extra) > 0 {
-		fmt.Fprintf(&b, "in %s but not in %s: %v.", path, typ.Name(), extra)
+		fmt.Fprintf(&b, "in %s but not in %s: %v.", name, typ.Name(), extra)
 	}
 	return b.String(), nil
 }

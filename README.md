@@ -14,7 +14,7 @@ One pipeline, five stages:
 | --- | --- | --- |
 | 1. Ingest | A steerable match simulator streams passes, shots, tackles, pressure and possession changes | Built |
 | 2. Interpret | A deterministic stats engine computes pass difficulty, xG, speeds, possession, momentum, pressure index, chaos and rhythm; rules flag candidate moments; an MCP server exposes it all to agents | Built |
-| 3. Explain | Agents on Microsoft Foundry decide what matters, explain why, and verify every claim against event IDs | Planned |
+| 3. Explain | Four agents decide what matters, explain why, and verify every claim against the tools and event IDs; templates cover any agent that fails | Orchestrator built with recorded model replies; Microsoft Foundry next |
 | 4. Render | Timed overlay JSON is pushed to a live pitch view | Contract built, UI planned |
 | 5. Personalize | Role, club, player, language and favourite metric shape what each viewer sees | Planned |
 
@@ -22,7 +22,7 @@ The core rule: **the code computes every number; the AI only explains them.** Ev
 
 ## Quick start
 
-Requires Go 1.24 or later. No other dependencies.
+The data pipeline needs Go 1.24 or later and nothing else. The agents need Python 3.12 or later.
 
 ```bash
 # Generate a match as newline-delimited JSON
@@ -32,11 +32,16 @@ go run ./cmd/simulator -seed 7 > match.ndjson
 go run ./cmd/simulator -seed 7 -scenario scenarios/late-press.json -speed 60 \
   | go run ./cmd/stats -every 5 -pretty
 
-# Serve a live match to agents over MCP (http://localhost:8080/mcp)
+# Serve a live match to agents over MCP (http://localhost:8080/mcp);
+# the API reference is at http://localhost:8080/docs
 go run ./cmd/server -simulate -seed 7 -scenario scenarios/late-press.json -speed 60
 
+# Run the four agents over a replayed match with recorded model replies (no Azure needed)
+make agents
+
 # Run the tests
-go test ./...
+make test          # Go
+make agents-test   # Python: lint, types, tests
 ```
 
 The same seed and scenario always produce the same match, so a demo can be replayed exactly.
@@ -65,10 +70,11 @@ internal/store     live match state, safe for concurrent readers
 internal/mcp       a small, dependency-free MCP server (stdio and HTTP)
 internal/mcptools  the Touchline tools agents call
 internal/overlay   the on-screen overlay contract and its validation
+internal/apidocs   the OpenAPI document and the API reference at /docs
 schema/            JSON Schemas for events, matches and overlays
 scenarios/         scenario files
 docs/              plan, architecture, contracts, implementation guide
-agents/            Foundry agents (planned)
+agents/            the agent orchestrator, agent instructions and tests (Python)
 web/               pitch view and overlays (planned)
 ```
 
@@ -87,7 +93,7 @@ Start with [docs/README.md](docs/README.md). Highlights:
 
 ## Built with
 
-Go, Microsoft Foundry, Microsoft Agent Framework, Model Context Protocol, Azure Event Hubs, Azure Container Apps, Azure SignalR Service and Azure Managed Redis. Some of these are planned; the status table above shows what exists today.
+Go, Python, Model Context Protocol (our own Go server and the official Python SDK), Scalar, Microsoft Foundry, Microsoft Agent Framework, Azure Event Hubs, Azure Container Apps, Azure SignalR Service and Azure Managed Redis. The Azure and Foundry parts are planned; the status table above shows what exists today.
 
 ## Licence
 

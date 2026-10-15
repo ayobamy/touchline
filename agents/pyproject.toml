@@ -1,0 +1,59 @@
+[project]
+name = "touchline-agents"
+version = "0.1.0"
+description = "Touchline agent orchestrator: Moment Detector, Narrator, Verifier and Director."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+# Exact pins. requirements.txt and requirements-dev.txt are compiled from these
+# (see README.md) so every transitive dependency is pinned too.
+dependencies = [
+  "jsonschema==4.26.0",
+  "mcp==2.3.0",
+]
+
+[dependency-groups]
+dev = [
+  "coverage==7.16.2",
+  "mypy==2.4.0",
+  "pytest==9.1.1",
+  "ruff==0.17.0",
+  "types-jsonschema==4.26.0.20261006",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers --strict-config"
+markers = ["integration: starts the Go server; needs Go on PATH"]
+filterwarnings = ["error"]
+
+[tool.coverage.run]
+source = ["touchline_agents"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+fail_under = 90
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+  "E", "W", "F", "I", "N", "B", "UP", "SIM", "C4", "RUF", "ASYNC", "PT", "RET",
+  "PL", "S", "PERF", "TID", "BLE", "ARG", "PTH", "TRY", "LOG", "G",
+]
+ignore = [
+  "TRY003",  # messages that explain the failure belong at the raise site
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "PLR2004"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["touchline_agents", "tests"]

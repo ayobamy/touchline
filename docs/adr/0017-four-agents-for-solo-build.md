@@ -1,6 +1,6 @@
 # ADR 0017: Four agents for the solo build
 
-- **Status:** Accepted, not yet implemented
+- **Status:** Accepted, implemented in the orchestrator with recorded model replies; Foundry models still to wire ([ADR 0022](0022-orchestrator-asyncio-pipeline.md))
 - **Date:** 2026-10-15
 
 ## Context

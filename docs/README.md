@@ -23,7 +23,9 @@ These documents describe what Touchline is, how it is built and how it will be f
 | Stats engine | Built and tested |
 | Candidate-moment rules | Built and tested |
 | MCP server exposing stats tools (HTTP and stdio) | Built and tested |
-| Agents on Microsoft Foundry | Planned |
+| API reference: OpenAPI document and Scalar page at `/docs` | Built and tested |
+| Agent orchestrator: Moment Detector, Narrator, Verifier, Director, fallbacks, schema gate | Built and tested with recorded model replies |
+| Agents on Microsoft Foundry | Next: `FoundryModel` reads its settings; wiring planned |
 | Event Hubs ingestion and Redis shared state | Planned |
 | Pitch view and overlays | Planned |
 | Deployment to Azure Container Apps | Planned |

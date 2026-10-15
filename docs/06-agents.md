@@ -9,7 +9,7 @@ Four agents turn statistics into explained, verified overlays. They run on **Mic
 | **Moment Detector** | A candidate moment from the stats service | A moment brief: what happened, why it may matter, evidence event IDs; or "skip" | Small, fast |
 | **Narrator** | A moment brief and the active viewer profiles | Draft overlays: one per audience and locale | Larger, better writing |
 | **Verifier** | Draft overlays | Each draft approved, or rejected with reasons | Small, fast; strict instructions |
-| **Director** | Verified overlays, the current screen schedule | Scheduled overlays (priority, slot, time-to-live), stale ones dropped | Code first; model only to break ties |
+| **Director** | Verified overlays, the current screen schedule | Scheduled overlays (priority, slot, time-to-live), stale ones dropped | Code only ([ADR 0024](adr/0024-director-and-fallbacks-in-code.md)) |
 
 In the full design a separate **Tactical Analyst** explains the "why" and a **Localizer** handles languages. For the solo build both are folded into the Narrator (see [02 Plan](02-plan.md)); they can be split out again without changing any contract.
 
@@ -50,7 +50,11 @@ The Moment Detector then decides which candidates deserve screen time. Expect it
 
 Bad arguments, unknown IDs and unknown fields come back as tool errors (`isError: true`) with a message the model can act on, not as protocol errors.
 
-The server also offers a small JSON API for the orchestrator and viewer: `GET /api/status`, `/api/match`, `/api/snapshot`, `/api/moments?after=N`, and `/healthz`.
+The server also offers a small JSON API for the orchestrator and viewer: `GET /api/status`, `/api/match`, `/api/snapshot`, `/api/moments?after=N`, and `/healthz`. All of it, MCP included, is described in the OpenAPI document at `/openapi.json` and browsable at `/docs` ([ADR 0025](adr/0025-openapi-and-scalar-api-reference.md)).
+
+### Evidence packs
+
+`get_window`, `get_status`, `get_snapshot` and `get_player_stats` describe the match *now*. An agent that answers late, or runs against a replayed match, would quote the wrong minute. So for each moment the orchestrator fetches a time-anchored evidence pack in code, and the agents see only that: the moment and its metrics, `get_event` for every evidence ID, and `compare_periods` for pressure index and momentum over the five minutes up to the moment and the five before ([ADR 0023](adr/0023-time-anchored-evidence-code-first-verifier.md)).
 
 ## Shared state
 
@@ -83,7 +87,7 @@ These are the behaviours the Best Multi-Agent System judges look for, so the dem
 
 | Failure | Detection | Recovery |
 | --- | --- | --- |
-| Narrator states a number that does not match the stats | Verifier compares each number with an MCP tool result | Rejected with the correct value; Narrator rewrites; at most two rewrites, then the moment is dropped |
+| Narrator states a number that does not match the stats | Verifier code checks every number against the moment's tool results before its model looks | Rejected with the correct value; Narrator rewrites; at most two rewrites, then the draft is dropped (for a goal, the template is published) |
 | Narrator cites an event that does not support the claim | Verifier calls `get_event` for every cited ID | Rejected; same loop |
 | An agent misses its deadline | Orchestrator timeout | Director publishes a template overlay built only from stats-engine numbers, marked `fallback: true` |
 | Overlay arrives after its moment has passed | Director compares `show_at_ms + ttl_ms` with the match clock | Dropped silently |
@@ -112,7 +116,7 @@ Each viewer has a profile:
 
 ## Instructions for the Narrator
 
-Keep these in the agent's system instructions:
+The full instructions, with a Nigerian Pidgin style guide and examples, are in [`agents/instructions/narrator.md`](../agents/instructions/narrator.md). The essentials:
 
 - Every number must come from an MCP tool result in this conversation. If you do not have it, call a tool or leave the number out.
 - Explain *why* the moment matters, not only *what* happened.

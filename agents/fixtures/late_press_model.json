@@ -1,0 +1,165 @@
+{
+  "_comment": "Model replies for seed 7, scenarios/late-press.json, replayed by FakeModel. Hand-written in the shape the Foundry agents must return, using only numbers from the recorded tool results in late_press_tools.json. m-0001-mo-018 plants a wrong pressure index (7.4; the tools say 6.0) that the Verifier must reject. m-0001-mo-017's Narrator never answers in time, so it falls back to a template. Moments not listed have no recorded reply: goals, cards, big chances, press switches and momentum swings then get templates, and the rest are skipped. Regenerate from a real model with --record-model (see README.md).",
+  "moment_detector": {
+    "m-0001-mo-001": [
+      {
+        "reply": {
+          "decision": "surface",
+          "headline_idea": "Okoro opens the scoring for Rovers",
+          "why_it_matters": "The first goal of the match, finished from a very tight angle.",
+          "evidence_event_ids": ["m-0001-00234", "m-0001-00235"],
+          "suggested_priority": 1
+        }
+      }
+    ],
+    "m-0001-mo-002": [
+      {
+        "reply": {
+          "decision": "skip",
+          "reason": "Rovers scored three minutes ago; a momentum graphic would repeat the goal story."
+        }
+      }
+    ],
+    "m-0001-mo-004": [
+      {
+        "reply": {
+          "decision": "skip",
+          "reason": "A fine pass, but nothing came of it."
+        }
+      }
+    ],
+    "m-0001-mo-017": [
+      {
+        "reply": {
+          "decision": "surface",
+          "headline_idea": "Hale pulls one back for Riverside",
+          "why_it_matters": "Riverside are back within a goal after being on the back foot.",
+          "evidence_event_ids": ["m-0001-01091", "m-0001-01092"],
+          "suggested_priority": 1
+        }
+      }
+    ],
+    "m-0001-mo-018": [
+      {
+        "reply": {
+          "decision": "surface",
+          "headline_idea": "Rovers switch on a high press",
+          "why_it_matters": "Their pressure index has jumped from 2.1 to 6.0, pinning Riverside back.",
+          "evidence_event_ids": [
+            "m-0001-01211",
+            "m-0001-01214",
+            "m-0001-01218",
+            "m-0001-01226",
+            "m-0001-01227",
+            "m-0001-01244"
+          ],
+          "suggested_priority": 2
+        }
+      }
+    ]
+  },
+  "narrator": {
+    "m-0001-mo-001": [
+      {
+        "reply": {
+          "drafts": [
+            {
+              "audience": "analyst",
+              "locale": "en",
+              "headline": "Okoro scores from a 0.05 xG chance",
+              "body": "Ivan Okoro scores from a tight angle on 11 minutes. A 0.05 xG chance, struck at 53.5 km/h. RIV 0-1 IRO.",
+              "metrics": [
+                { "label": "xG", "value": "0.05" },
+                { "label": "Shot speed", "value": "53.5", "unit": "km/h" }
+              ]
+            },
+            {
+              "audience": "casual",
+              "locale": "pcm",
+              "headline": "Okoro don score! Rovers dey lead",
+              "body": "Ivan Okoro shoot from tight angle for 11 minutes and e enter. Di chance small (xG 0.05), but goal na goal. RIV 0-1 IRO.",
+              "metrics": [{ "label": "xG", "value": "0.05" }]
+            }
+          ]
+        }
+      }
+    ],
+    "m-0001-mo-017": [
+      {
+        "delay_s": 10,
+        "reply": { "drafts": [] }
+      }
+    ],
+    "m-0001-mo-018": [
+      {
+        "reply": {
+          "drafts": [
+            {
+              "audience": "analyst",
+              "locale": "en",
+              "headline": "Rovers turn the screw with a high press",
+              "body": "Ironbridge's pressure index is up to 7.4 from 2.1 in 5 minutes: they are winning the ball in Riverside's half.",
+              "metrics": [
+                { "label": "Pressure index", "value": "7.4", "unit": "per 10 opponent passes" },
+                { "label": "Five minutes earlier", "value": "2.1", "unit": "per 10 opponent passes" }
+              ]
+            },
+            {
+              "audience": "casual",
+              "locale": "pcm",
+              "headline": "Rovers don start to press high",
+              "body": "For di last 5 minutes, Rovers no dey give Riverside space. Pressure index don reach 6.0. Na so dem dey force mistake.",
+              "metrics": [
+                { "label": "Pressure index", "value": "6.0", "unit": "per 10 opponent passes" }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "reply": {
+          "drafts": [
+            {
+              "audience": "analyst",
+              "locale": "en",
+              "headline": "Rovers turn the screw with a high press",
+              "body": "Ironbridge's pressure index is up to 6.0 from 2.1 in 5 minutes: they are winning the ball in Riverside's half.",
+              "metrics": [
+                { "label": "Pressure index", "value": "6.0", "unit": "per 10 opponent passes" },
+                { "label": "Five minutes earlier", "value": "2.1", "unit": "per 10 opponent passes" }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "verifier": {
+    "m-0001-mo-001": [
+      {
+        "reply": {
+          "verdicts": [
+            { "overlay_id": "ov-m-0001-mo-001-analyst-en", "approved": true, "problems": [] },
+            { "overlay_id": "ov-m-0001-mo-001-casual-pcm", "approved": true, "problems": [] }
+          ]
+        }
+      }
+    ],
+    "m-0001-mo-018": [
+      {
+        "reply": {
+          "verdicts": [
+            { "overlay_id": "ov-m-0001-mo-018-casual-pcm", "approved": true, "problems": [] }
+          ]
+        }
+      },
+      {
+        "reply": {
+          "verdicts": [
+            { "overlay_id": "ov-m-0001-mo-018-analyst-en", "approved": true, "problems": [] }
+          ]
+        }
+      }
+    ]
+  }
+}
